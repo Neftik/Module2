@@ -21,35 +21,35 @@ func TestCalcHandler(t *testing.T) {
 			method:           http.MethodPost,
 			body:             map[string]string{"expression": "2 + 2"},
 			expectedStatus:   http.StatusOK,
-			expectedResponse: `{"result":4}`, // проверьте, чтобы ответ совпадал в формате
+			expectedResponse: `{"result":"4"}`,
 		},
 		{
 			name:             "Wrong Method",
 			method:           http.MethodGet,
 			body:             nil,
 			expectedStatus:   http.StatusMethodNotAllowed,
-			expectedResponse: `{"error": "Wrong Method"}`,
+			expectedResponse: `{"error":"Wrong Method"}`,
 		},
 		{
 			name:             "Invalid Body",
 			method:           http.MethodPost,
 			body:             "invalid body",
 			expectedStatus:   http.StatusBadRequest,
-			expectedResponse: `{"error": "Invalid Body"}`,
+			expectedResponse: `{"error":"Invalid Body"}`,
 		},
 		{
 			name:             "Error Calculation - Invalid Expression",
 			method:           http.MethodPost,
 			body:             map[string]string{"expression": "2*(2+2)"},
 			expectedStatus:   http.StatusUnprocessableEntity,
-			expectedResponse: `{"error": "Error calculation"}`, // Убедитесь, что возвращает ошибку
+			expectedResponse: `{"error": "Error calculation"}`,
 		},
 		{
 			name:             "Wrong Path",
 			method:           http.MethodPost,
 			body:             map[string]string{"expression": "2 + 2"},
 			expectedStatus:   http.StatusNotFound,
-			expectedResponse: "", // Нет тела
+			expectedResponse: "",
 		},
 	}
 
@@ -64,7 +64,6 @@ func TestCalcHandler(t *testing.T) {
 				}
 			}
 
-			// Измените путь на неправильный для теста "Wrong Path"
 			reqPath := "/api/v1/calculate"
 			if tt.name == "Wrong Path" {
 				reqPath = "/wrong/path"

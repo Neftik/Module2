@@ -35,7 +35,6 @@ func New() *Application {
 	}
 }
 
-// Обработка HTTP-запроса к эндпоинту API
 func CalcHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error": "Wrong Method"}`, http.StatusMethodNotAllowed)
@@ -104,6 +103,6 @@ func (a *Application) Run() error {
 }
 
 func (a *Application) RunServer() error {
-	http.HandleFunc("/api/v1/calculate", CalcHandler) // Обновление пути до эндпоинта
+	http.HandleFunc("/api/v1/calculate", CalcHandler)
 	return http.ListenAndServe(":"+a.config.Addr, nil)
 }
