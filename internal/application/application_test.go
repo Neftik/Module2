@@ -23,28 +23,28 @@ func TestCalcHandler(t *testing.T) {
 			method:           http.MethodPost,
 			body:             map[string]string{"expression": "2 + 2"},
 			expectedStatus:   http.StatusOK,
-			expectedResponse: `{"result":"4"}`,
+			expectedResponse: `{"result":"4"}` + "\n",
 		},
 		{
 			name:             "Wrong Method",
 			method:           http.MethodGet,
 			body:             nil,
 			expectedStatus:   http.StatusMethodNotAllowed,
-			expectedResponse: `{"error":"Wrong Method"}`,
+			expectedResponse: `{"error":"Wrong Method"}` + "\n",
 		},
 		{
 			name:             "Invalid Body",
 			method:           http.MethodPost,
 			body:             "invalid body",
 			expectedStatus:   http.StatusBadRequest,
-			expectedResponse: `{"error":"Invalid Body"}`,
+			expectedResponse: `{"error":"Invalid Body"}` + "\n",
 		},
 		{
 			name:             "Error Calculation - Invalid Expression",
 			method:           http.MethodPost,
 			body:             map[string]string{"expression": "2*(2+2{)"},
 			expectedStatus:   http.StatusUnprocessableEntity,
-			expectedResponse: `{"error": "Error calculation"}`,
+			expectedResponse: `{"error": "Error calculation"}` + "\n",
 		},
 		{
 			name:             "Wrong Path",
@@ -83,7 +83,7 @@ func TestCalcHandler(t *testing.T) {
 
 			if tt.expectedResponse != "" {
 				if rr.Body.String() != tt.expectedResponse {
-					t.Errorf("Handler returned unexpected response body: got %v want %v", rr.Body.String(), tt.expectedResponse)
+					t.Errorf("Handler returned unexpected response body: got '%v' want '%v'", rr.Body.String(), tt.expectedResponse)
 				}
 			}
 		})
