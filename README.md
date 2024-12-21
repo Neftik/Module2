@@ -1,115 +1,158 @@
-# Calculator
+# Simple calculator
 
-## What is Calculator?
+**Calc Go** — это сервис для выполнения математических вычислений на основе переданного выражения. Сервис предоставляет API для обработки запросов на вычисления, а также включает в себя набор тестов для проверки корректности работы.
 
-The Calculator API is an HTTP service designed to process mathematical expressions using numbers and operators such as "+", "-", "*", and "/". It also supports brackets "(" and ")".
+Проект написан на языке Go, организован в модульной структуре и содержит примеры использования.
 
-### Calculator Operations
+---
 
-| Name                | Symbol       | Supported | Error when                                 | Description                                                                |
-| ------------------- | ------------ | --------- | ----------------------------------------- | -------------------------------------------------------------------------- |
-| **Number**           | `float64`    | ☑         | -                                         | A number (e.g., `1`, `3.14`). Nothing special.                             |
-| **Multiply**         | `*`          | ☑         | -                                         | Has higher priority than addition and subtraction, but lower than brackets.|
-| **Division**         | `/`          | ☑         | Division by zero is not allowed           | Has higher priority than addition and subtraction, but lower than brackets.|
-| **Addition**         | `+`          | ☑         | -                                         | Has lower priority (same as subtraction).                                 |
-| **Subtraction**      | `-`          | ☑         | -                                         | Has lower priority (same as addition).                                    |
-| **Brackets**         | `(`, `)`     | ☑         | Bracket not opened/closed correctly       | Brackets have the highest priority. Note: `10(1+1)` is `102`.             |
-| **Other Characters** | Any          | ☒         | Can't convert to float                    | Avoid using unsupported characters.                                       |
+## Установка и запуск
 
-### HTTP Requests and Responses
+Для запуска проекта выполните следующие шаги:
 
-#### Request
+1. Склонируйте репозиторий:
 
-The API expects a JSON request with a mathematical expression.
+```bash
+git clone https://github.com/Andreyka-coder9192/calc_go.git
+cd calc_go
+```
+
+2. Убедитесь, что Go установлен и находится в `$PATH` (проверить версию можно командой `go version`).
+
+3. Запустите API-сервер командой:
+
+```bash
+go run ./cmd/calc_service/main.go
+```
+
+Сервер запустится на порту `8080`. Если необходимо изменить порт, установите переменную окружения `PORT` перед запуском:
+
+```bash
+export PORT=9090
+go run ./cmd/calc_service/main.go
+```
+
+---
+
+## Использование API
+
+### Эндпоинт
+
+```
+POST /api/v1/calculate
+```
+
+### Заголовки
+
+- `Content-Type: application/json`
+
+### Тело запроса
+
+Пример:
 
 ```json
 {
-   "expression": "2+2"
+  "expression": "2+2*2"
 }
+```
 
-Responses
-OK: Successful calculation.
+### Ответы
 
-Status Code: 200
-Response Body:
-Responses
-OK: Successful calculation.
+1. **Успешный запрос**
 
-Status Code: 200
-Response Body:
-json
+   **Статус-код:** `200 OK`  
+   **Пример ответа:**
 
-{
-   "result": 4
-}
-Error: Error in processing the expression.
+   ```json
+   {
+     "result": "6"
+   }
+   ```
 
-Status Code: 422 (Unprocessable Entity)
-Response Body:
-json
-{
-   "error": "number parsing error"
-}
-Error Messages
-Possible error messages include:
+2. **Ошибка обработки выражения**
 
-method not allowed
-invalid body
-page not found
-bracket should be opened
-bracket should be closed
-number parsing error
-unknown operator
-divide by zero not allowed
-unknown calculator error
-How Requests Are Sent
-Use the following format for sending requests:
+   **Статус-код:** `422 Unprocessable Entity`  
+   **Пример ответа:**
 
-json
-{
-   "expression": "2+2"
-}
-Example of Valid Request (200 OK)
-bash
-curl 'localhost:4200/api/v1/calculate' \
+   ```json
+   {
+     "error": "Error calculation"
+   }
+   ```
+
+3. **Неподдерживаемый метод**
+
+   **Статус-код:** `405 Method Not Allowed`  
+   **Пример ответа:**
+
+   ```json
+   {
+     "error": "Wrong Method"
+   }
+   ```
+
+4. **Некорректное тело запроса**
+
+   **Статус-код:** `400 Bad Request`  
+   **Пример ответа:**
+
+   ```json
+   {
+     "error": "Invalid Body"
+   }
+   ```
+
+---
+
+## Примеры использования
+
+1. **Успешный запрос**:
+
+```bash
+curl --location 'http://localhost:8080/api/v1/calculate' \
 --header 'Content-Type: application/json' \
---data '{"expression":"1+1"}'
-Response:
+--data '{
+  "expression": "2+2*2"
+}'
+```
 
-json
+Ответ:
+
+```json
 {
-   "result": 2
+  "result": "6"
 }
-Example of Invalid Body (400 Bad Request)
-bash
-curl 'localhost:4200/api/v1/calculate' \
+```
+
+2. **Ошибка: некорректное выражение**:
+
+```bash
+curl --location 'http://localhost:8080/api/v1/calculate' \
 --header 'Content-Type: application/json' \
---data 'bebebe'
-Response:
+--data '{
+  "expression": "2*(2+2{)"
+}'
+```
 
-json
-{
-   "error": "invalid body"
-}
-Example of Method Not Allowed (405)
-bash
-curl --request GET 'localhost:4200/api/v1/calculate' \
---header 'Content-Type: application/json' \
---data '{"expression":"1+1"}'
-Response:
+Ответ:
 
-json
+```json
 {
-   "error": "method not allowed"
+  "error": "Error calculation"
 }
-Example of Unprocessable Entity (422)
-bash
-curl 'localhost:4200/api/v1/calculate' \
---header 'Content-Type: application/json' \
---data '{"expression":"1+"}'
-Response:
+```
 
-json
+3. **Ошибка: неверный метод**:
+
+```bash
+curl --location 'http://localhost:8080/api/v1/calculate' \
+--header 'Content-Type: application/json'
+```
+
+Ответ:
+
+```json
 {
-   "error": "number parsing error: '' is not a number in expression '1+'"
+  "error": "Wrong Method"
 }
+```
