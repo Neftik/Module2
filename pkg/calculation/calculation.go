@@ -6,132 +6,128 @@ import (
 	"strings"
 )
 
-func stringToFloat64(str string) float64 {
-	degree := float64(1)
-	var res float64 = 0
-	var invers bool = false
-	for i := len(str); i > 0; i-- {
-		if str[i-1] == '-' {
-			invers = true
-		} else {
-			res += float64(9-int('9'-str[i-1])) * degree
-			degree *= 10
-		}
-	}
-	if invers {
-		res = 0 - res
-	}
-	return res
-}
-
-func isSign(value rune) bool {
-	return value == '+' || value == '-' || value == '*' || value == '/'
-}
-
 func Calc(expression string) (float64, error) {
-	if len(expression) < 3 {
-		return 0, ErrInvalidExpression
+	if expression == "" {
+		return 0, ErrEmptyInput
 	}
-	//////////////////////////////////////////////////////////////////////////////////////////////////////
-	var res float64
-	var b string
-	var c rune = 0
-	var resflag bool = false
-	var isc int
-	var countc int = 0
-	//////////////////////////////////////////////////////////////////////////////////////////////////////
-	for _, value := range expression {
-		if isSign(value) {
-			countc++
-		}
-	}
-	//////////////////////////////////////////////////////////////////////////////////////////////////////
-	if isSign(rune(expression[0])) || isSign(rune(expression[len(expression)-1])) {
-		return 0, ErrInvalidExpression
-	}
-	for i, value := range expression {
-		if value == '(' {
-			isc = i
-		}
-		if value == ')' {
-			calc, err := Calc(expression[isc+1 : i])
-			if err != nil {
-				return 0, ErrInvalidExpression
-			}
-			calcstr := strconv.FormatFloat(calc, 'f', 0, 64)
-			i2 := i
-			i -= len(expression[isc:i+1]) - len(calcstr)
-			expression = strings.Replace(expression, expression[isc:i2+1], calcstr, 1) // Меняем скобки на результат выражения в них
-		}
-	}
-	if countc > 1 {
-		for i := 1; i < len(expression); i++ {
-			value := rune(expression[i])
-			///////////////////////////////////////////////////////////////////////////////////////////////////////////////
-			//Умножение и деление
-			if value == '*' || value == '/' {
-				var imin int = i - 1
-				if imin != 0 {
-					for !isSign(rune(expression[imin])) && imin > 0 {
-						imin--
-					}
-					imin++
-				}
-				var imax int = i + 1
-				if imax == len(expression) {
-					imax--
-				} else {
-					for !isSign(rune(expression[imax])) && imax < len(expression)-1 {
-						imax++
-					}
-				}
-				if imax == len(expression)-1 {
-					imax++
-				}
-				calc, err := Calc(expression[imin:imax])
-				if err != nil {
-					return 0, ErrInvalidExpression
-				}
-				calcstr := strconv.FormatFloat(calc, 'f', 0, 64)
-				i -= len(expression[isc:i+1]) - len(calcstr) - 1
-				expression = strings.Replace(expression, expression[imin:imax], calcstr, 1) // Меняем скобки на результат выражения в них
-			}
-			if value == '+' || value == '-' || value == '*' || value == '/' {
-				c = value
-			}
-		}
-	}
-	//////////////////////////////////////////////////////////////////////////////////////////////////////
-	for _, value := range expression + "s" {
-		switch {
-		case value == ' ':
-			continue
-		case value > 47 && value < 58: // Если это цифра
-			b += string(value)
-		case isSign(value) || value == 's': // Если это знак
-			if resflag {
-				switch c {
-				case '+':
-					res += stringToFloat64(b)
-				case '-':
-					res -= stringToFloat64(b)
-				case '*':
-					res *= stringToFloat64(b)
-				case '/':
-					res /= stringToFloat64(b)
-				}
-			} else {
-				resflag = true
-				res = stringToFloat64(b)
-			}
-			b = strings.ReplaceAll(b, b, "")
-			c = value
+	expression = strings.ReplaceAll(expression, " ", "")
+	return evaluateExpression(expression)
+}
 
-			/////////////////////////////////////////////////////////////////////////////////////////////
-		case value == 's':
-		default:
-			return 0, fmt.Errorf("Not correct input")
+func evaluateExpression(expression string) (float64, error) {
+	var values []float64
+	var ops []rune
+	i := 0
+	for i < len(expression) {
+		char := rune(expression[i])
+		if char == '(' {
+			ops = append(ops, char)
+			i++
+			continue
+		} else if char == ')' {
+			for len(ops) > 0 && ops[len(ops)-1] != '(' {
+				if err := applyOperation(&values, &ops); err != nil {
+					return 0, err
+				}
+			}
+			if len(ops) == 0 {
+				return 0, ErrMismatchedParentheses
+			}
+			ops = ops[:len(ops)-1]
+			i++
+			continue
+		} else if isDigit(char) ||
+			(char == '-' && (i == 0 || expression[i-1] == '(' || isOperator(rune(expression[i-1])))) ||
+			(char == '+' && i == 0) {
+			start := i
+			if char == '-' || char == '+' {
+				i++
+			}
+			for i < len(expression) && (isDigit(rune(expression[i])) || expression[i] == '.') {
+				if expression[i] == '.' && (i < len(expression)-1 && expression[i+1] == '.') {
+					return 0, ErrMultipleDecimalPoints
+				}
+				i++
+			}
+			num, err := strconv.ParseFloat(expression[start:i], 64)
+			if err != nil {
+				return 0, fmt.Errorf("invalid number: %s: %w", expression[start:i], ErrInvalidNumber)
+			}
+			values = append(values, num)
+			continue
+		} else if isOperator(char) {
+			if i == len(expression)-1 {
+				return 0, ErrOperatorAtEnd
+			}
+			for len(ops) > 0 && precedence(ops[len(ops)-1]) >= precedence(char) {
+				if err := applyOperation(&values, &ops); err != nil {
+					return 0, err
+				}
+			}
+			ops = append(ops, char)
+			i++
+			continue
+		} else {
+			return 0, fmt.Errorf("unexpected token: %s: %w", string(char), ErrUnexpectedToken)
 		}
 	}
-	return res, nil
+
+	for len(ops) > 0 {
+		if err := applyOperation(&values, &ops); err != nil {
+			return 0, err
+		}
+	}
+
+	if len(values) != 1 {
+		return 0, ErrInvalidExpression
+	}
+	return values[0], nil
+}
+
+func applyOperation(values *[]float64, ops *[]rune) error {
+	if len(*values) < 2 || len(*ops) == 0 {
+		return ErrNotEnoughValues
+	}
+	b := (*values)[len(*values)-1]
+	a := (*values)[len(*values)-2]
+	op := (*ops)[len(*ops)-1]
+
+	*values = (*values)[:len(*values)-2]
+	*ops = (*ops)[:len(*ops)-1]
+
+	switch op {
+	case '+':
+		*values = append(*values, a+b)
+	case '-':
+		*values = append(*values, a-b)
+	case '*':
+		*values = append(*values, a*b)
+	case '/':
+		if b == 0 {
+			return ErrDivisionByZero
+		}
+		*values = append(*values, a/b)
+	default:
+		return fmt.Errorf("invalid operator: %v: %w", string(op), ErrInvalidOperator)
+	}
+
+	return nil
+}
+
+func isDigit(ch rune) bool {
+	return ch >= '0' && ch <= '9'
+}
+
+func isOperator(ch rune) bool {
+	return ch == '+' || ch == '-' || ch == '*' || ch == '/'
+}
+
+func precedence(op rune) int {
+	switch op {
+	case '+', '-':
+		return 1
+	case '*', '/':
+		return 2
+	}
+	return 0
 }

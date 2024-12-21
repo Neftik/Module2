@@ -3,7 +3,6 @@ package application
 import (
 	"bufio"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -36,62 +35,75 @@ func New() *Application {
 	}
 }
 
-// Функция запуска приложения
-// тут будем чиать введенную строку и после нажатия ENTER писать результат работы программы на экране
-// если пользователь ввел exit - то останаваливаем приложение
+// Обработка HTTP-запроса к эндпоинту API
+func CalcHandler(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, `{"error": "Wrong Method"}`, http.StatusMethodNotAllowed)
+		return
+	}
+
+	var request struct {
+		Expression string `json:"expression"`
+	}
+
+	defer r.Body.Close()
+
+	err := json.NewDecoder(r.Body).Decode(&request)
+	if err != nil || request.Expression == "" {
+		http.Error(w, `{"error": "Invalid Body"}`, http.StatusBadRequest)
+		return
+	}
+
+	result, err := calculation.Calc(request.Expression)
+	if err != nil {
+		var errorMsg string
+		switch {
+		case err == calculation.ErrInvalidExpression:
+			errorMsg = "Error calculation"
+			http.Error(w, fmt.Sprintf(`{"error": "%s"}`, errorMsg), http.StatusUnprocessableEntity)
+			return
+		default:
+			http.Error(w, `{"error": "Unknown error occurred"}`, http.StatusInternalServerError)
+			return
+		}
+	}
+
+	response := struct {
+		Result float64 `json:"result"`
+	}{
+		Result: result,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	if err := json.NewEncoder(w).Encode(response); err != nil {
+		log.Printf("Error encoding response: %v", err)
+	}
+}
+
 func (a *Application) Run() error {
 	for {
-		// читаем выражение для вычисления из командной строки
 		log.Println("input expression")
 		reader := bufio.NewReader(os.Stdin)
 		text, err := reader.ReadString('\n')
 		if err != nil {
 			log.Println("failed to read expression from console")
 		}
-		// убираем пробелы, чтобы оставить только вычислемое выражение
 		text = strings.TrimSpace(text)
-		// выходим, если ввели команду "exit"
 		if text == "exit" {
-			log.Println("aplication was successfully closed")
+			log.Println("application was successfully closed")
 			return nil
 		}
-		//вычисляем выражение
 		result, err := calculation.Calc(text)
 		if err != nil {
-			log.Println(text, " calculation failed wit error: ", err)
+			log.Println(text, "calculation failed with error:", err)
 		} else {
 			log.Println(text, "=", result)
 		}
 	}
 }
 
-type Request struct {
-	Expression string `json:"expression"`
-}
-
-func CalcHandler(w http.ResponseWriter, r *http.Request) {
-	request := new(Request)
-	defer r.Body.Close()
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	result, err := calculation.Calc(request.Expression)
-	if err != nil {
-		if errors.Is(err, calculation.ErrInvalidExpression) {
-			fmt.Fprintf(w, "err: %s", err.Error())
-		} else {
-			fmt.Fprintf(w, "unknown err")
-		}
-
-	} else {
-		fmt.Fprintf(w, "result: %f", result)
-	}
-}
-
 func (a *Application) RunServer() error {
-	http.HandleFunc("/", CalcHandler)
+	http.HandleFunc("/api/v1/calculate", CalcHandler) // Обновление пути до эндпоинта
 	return http.ListenAndServe(":"+a.config.Addr, nil)
 }
