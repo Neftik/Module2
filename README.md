@@ -22,14 +22,13 @@ cd calc_go
 3. Запустите API-сервер командой:
 
 ```bash
-go run ./cmd/calc_service/main.go
+go run .\cmd\main.go
 ```
 
-Сервер запустится на порту `8080`. Если необходимо изменить порт, установите переменную окружения `PORT` перед запуском:
+Сервер запустится на порту `8080`. Если необходимо изменить порт, установите флаг `--port`:
 
 ```bash
-export PORT=9090
-go run ./cmd/calc_service/main.go
+go run .\cmd\main.go --port 9090
 ```
 
 ---
