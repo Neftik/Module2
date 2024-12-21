@@ -1,72 +1,91 @@
-Calculator
-Overview
-The Calculator is a web-based HTTP API specifically designed to evaluate mathematical expressions. It supports basic operations like addition, subtraction, multiplication, and division, as well as the use of parentheses for precedence control.
+# Calculator
 
-Supported Operations
-Name	Symbol	Supported	Error When	Description
-Number	float64	☑	-	Represents a numerical value in calculations.
-<ins>Multiply</ins>	*	☑	-	Has higher precedence over addition and subtraction but lower than parentheses.
-<ins>Division</ins>	/	☑	Division by 0 is not allowed	Has higher precedence over addition and subtraction but lower than parentheses.
-<ins>Adding</ins>	+	☑	-	Operates with lower precedence, equivalent to subtraction.
-<ins>Subtraction</ins>	-	☑	-	Operates with lower precedence, equivalent to addition.
-<ins>Brackets</ins>	(, )	☑	Bracket not closed / not opened	Family of highest precedence; for structures like
-10(1+1)
-which equals
-102
-.
-<ins>Other</ins>	any	☒	Cannot convert to float	Avoid using unsupported symbols or characters.
-HTTP Methods
-Name	Response Status	Method	Path	Body
-OK	200	POST	/api/v1/calculate	
-{"expression":"2+2"}
-Wrong Method	405	GET	/api/v1/calculate	
-{"expression":"2+2"}
-Wrong Path	404	POST	/any/unsupported/path	
-{"expression":"2+2"}
-Invalid Body	400	POST	/api/v1/calculate	
-invalid body
-Error Calculation	422	POST	/api/v1/calculate	
-{"expression":"2*(2+2)"}
-Request Structure
-To send requests, a specific structure for the input is used. This is defined in input:
+## What is calculator
+
+> [!IMPORTANT]
+>
+> It is an HTTP API, designed to process mathematical expressions using numbers and operators like "+", "-", "*", and "/". It also supports brackets "(" and ")".
+
+### Calculator
+
+| Name                         | Symbol       | Supported | Error when                                | Description                                                                |
+| ---------------------------- | ------------ | --------- | ---------------------------------------- | -------------------------------------------------------------------------- |
+| [Number](https://en.wikipedia.org/wiki/Rational_number) | `float64`   | ☑         | -                                        | A number (e.g., `1`, `3.14`). Nothing special.                             |
+| **Multiply**                 | `*`          | ☑         | -                                        | Has higher priority than addition and subtraction, but lower than brackets.|
+| **Division**                 | `/`          | ☑         | Division by zero is not allowed          | Has higher priority than addition and subtraction, but lower than brackets.|
+| **Adding**                   | `+`          | ☑         | -                                        | Has lower priority (same as subtraction).                                 |
+| **Subtraction**              | `-`          | ☑         | -                                        | Has lower priority (same as addition).                                    |
+| **Brackets**                 | `(`, `)`     | ☑         | Bracket not opened/closed correctly       | Brackets have the highest priority, and note: `10(1+1)` is `102`.         |
+| **Other characters**         | Any          | ☒         | Can't convert to float                   | Avoid using unsupported characters.                                       |
+
+### HTTP
+
+| Name             | Response status | Method | Path                    | Body                               |
+| ---------------- | --------------- | ------ | ----------------------- | ---------------------------------- |
+| **OK**           | 200             | POST   | `/api/v1/calculate`     | `{"expression":"2+2"}`            |
+| **Wrong Method** | 405             | GET    | `/api/v1/calculate`     | `{"expression":"2+2"}`            |
+| **Wrong Path**   | 404             | POST   | `/any/unsupported/path` | `{"expression":"2+2"}`            |
+| **Invalid Body** | 400             | POST   | `/api/v1/calculate`     | `invalid body`                    |
+| **Error calculation** | 422         | POST   | `/api/v1/calculate`     | `{"expression":"2*(2+2"}"`       |
+
+## How requests are sent?
+
+> [!NOTE]
+>
+> The request has a specific structure in the [input](internal/http/input/input.go):
 
 type Request struct {
-    Expression string `json:"expression"`
+   Expression string `json:"expression"`
 }
-Example JSON Body
-The expression should be formatted as follows in the JSON body:
+The expression is the mathematical expression you want to evaluate.
 
+In JSON, it looks like this:
+
+json
 {
-    "expression": "2+2"
+   "expression": "2+2"
 }
-You can find more examples of valid expressions in the calculator tests (TestCalc), while examples of invalid expressions are available in TestCalcErrors.
+[!TIP]
 
-Server Response
-Successful Response (HTTP 200)
-Responses adhere to a structure defined in responses:
+You can find a variety of examples with valid expressions in the calculator tests (TestCalc), and invalid expressions in TestCalcErrors.
+
+How will the server respond?
+[!NOTE]
+
+OK
+For successful responses, we use a structure in responses:
 
 type ResponseOK struct {
-    Result float64 `json:"result"`
+   Result float64 `json:"result"`
 }
-In JSON, a successful response will look like this:
+The result is the value obtained after calculating the expression.
 
+In JSON, the response looks like this:
+
+json
 {
-    "result": 4
+   "result": 4
 }
-Error Response
-Error responses utilize a different structure, still in responses:
+[!NOTE]
+
+Error
+In case of errors, the structure (also in responses) is different:
 
 type ResponseError struct {
-    Error string `json:"error"`
+   Error string `json:"error"`
 }
-In JSON, this will appear as:
+In JSON, it looks like this:
 
+json
 {
-    "error": "Error"
+   "error": "Error"
 }
-Various error messages are formatted following the conventions of vanerrors for simple error handling.
+Errors are formatted using vanerrors, and can include messages and causes.
 
-Common Error Messages
+[!TIP]
+
+Possible error messages include:
+
 "method not allowed"
 "invalid body"
 "page not found"
@@ -76,63 +95,91 @@ Common Error Messages
 "unknown operator"
 "divide by zero not allowed"
 "unknown calculator error"
-All these errors are generated due to invalid requests rather than server issues, and each will have accompanying messages and causes.
+These errors occur due to invalid requests, not server errors. Errors will also contain messages and causes.
 
-Running the Application
-Configuration
-Before running the application, create a configuration file with the required structure found in current config.
+How to run the application
+[!IMPORTANT]
 
-Important Configuration Parameters
-port: The port number on which the server will run.
-path: The API endpoint.
-do_log: Specifies whether the application should log every request.
-Starting the Application
-To run the application, use the following command in your console:
+Configuration file:
 
+You need to create a configuration file.
+
+Example JSON structure can be found in the current config.
+
+Don't forget to edit the path in the main.
+
+[!TIP]
+
+port: the port for the server to run.
+path: the endpoint of the API.
+do_log: whether to log every request in the calc service.
+[!IMPORTANT]
+
+Running:
+
+In the terminal, run the following command:
+
+shell
 go run cmd/main.go
-Ensure you are using Go version 1.23.0 or above.
+Make sure you have Go version >= 1.23.0 installed.
 
-Example Usage
-Using cURL
-Warning: Use Git Bash or WSL for cURL requests, as cURL does not work properly with Command Prompt or PowerShell.
+Examples
+[!WARNING]
 
-Successful Request (HTTP 200)
+If you're using Windows, it's recommended to use Git Bash or WSL for cURL requests. cURL might not work correctly in Command Prompt or PowerShell.
+
+200 (OK)
+shell
 curl 'localhost:4200/api/v1/calculate' \
 --header 'Content-Type: application/json' \
 --data '{"expression":"1+1"}'
 Result:
 
+json
 {
-    "result": 2
+   "result": 2
 }
-Invalid Body (HTTP 400)
+400 (Bad Request)
+shell
 curl 'localhost:4200/api/v1/calculate' \
 --header 'Content-Type: application/json' \
 --data 'bebebe'
 Result:
 
+json
+
 {
-    "error": "invalid body"
+   "error": "invalid body"
 }
-Method Not Allowed (HTTP 405)
+405 (Method Not Allowed)
+shell
 curl --request GET 'localhost:4200/api/v1/calculate' \
 --header 'Content-Type: application/json' \
 --data '{"expression":"1+1"}'
 Result:
 
+json
 {
-    "error": "method not allowed"
+   "error": "method not allowed"
 }
-Unprocessable Entity (HTTP 422)
+422 (Unprocessable Entity)
+shell
 curl 'localhost:4200/api/v1/calculate' \
 --header 'Content-Type: application/json' \
 --data '{"expression":"1+"}'
 Result:
 
+json
 {
-    "error": "number parsing error: '' is not a number in expression '1+'"
+   "error": "number parsing error: '' is not a number in expression '1+'"
 }
-(Or may return other errors for invalid expressions.)
+(Or other invalid expressions)
 
-Additional Examples
-For more examples, please refer to the tests.
+[!TIP]
+
+To see more examples, view tests.
+
+License
+MIT
+
+go
