@@ -37,13 +37,11 @@ func New() *Application {
 }
 
 func CalcHandler(w http.ResponseWriter, r *http.Request) {
-	// Проверка метода запроса
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error":"Wrong Method"}`, http.StatusMethodNotAllowed)
 		return
 	}
 
-	// Чтение тела запроса
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		http.Error(w, `{"error":"Invalid Body"}`, http.StatusBadRequest)
@@ -51,7 +49,6 @@ func CalcHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	// Декодирование тела запроса
 	var request struct {
 		Expression string `json:"expression"`
 	}
@@ -61,11 +58,10 @@ func CalcHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Вычисление
 	result, err := calculation.Calc(request.Expression)
 	if err != nil {
 		var errorMsg string
-		statusCode := http.StatusUnprocessableEntity // Используем 422 для ошибок вычислений
+		statusCode := http.StatusUnprocessableEntity
 
 		switch err {
 		case calculation.ErrInvalidExpression:
@@ -89,7 +85,7 @@ func CalcHandler(w http.ResponseWriter, r *http.Request) {
 		case calculation.ErrEmptyInput:
 			errorMsg = "Empty input"
 		default:
-			errorMsg = "Error calculation" // Генерируем общий месседж для остальных ошибок
+			errorMsg = "Error calculation"
 			statusCode = http.StatusUnprocessableEntity
 		}
 
@@ -97,7 +93,6 @@ func CalcHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Формирование ответа
 	response := struct {
 		Result string `json:"result"`
 	}{
@@ -111,7 +106,6 @@ func CalcHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Отправляем ответ
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	_, err = w.Write(responseJson)
@@ -143,14 +137,11 @@ func (a *Application) Run() error {
 }
 
 func (a *Application) RunServer() error {
-	// Маршрут для вычислений
 	http.HandleFunc("/api/v1/calculate", CalcHandler)
 
-	// Обработка всех несуществующих путей
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"Not Found"}`, http.StatusNotFound)
 	})
 
-	// Запуск сервера
 	return http.ListenAndServe(":"+a.config.Addr, nil)
 }

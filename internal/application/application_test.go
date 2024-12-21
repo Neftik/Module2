@@ -11,7 +11,6 @@ import (
 	"github.com/Andreyka-coder9192/calc_go/internal/application"
 )
 
-// Функция для удаления пробелов и символов новой строки в JSON-ответе
 func sanitizeJSON(s string) string {
 	return strings.Join(strings.Fields(s), "")
 }
@@ -49,8 +48,8 @@ func TestCalcHandler(t *testing.T) {
 			name:             "Error Calculation - Invalid Expression",
 			method:           http.MethodPost,
 			body:             map[string]string{"expression": "2(2+2{)"},
-			expectedStatus:   http.StatusUnprocessableEntity,  // Теперь 422
-			expectedResponse: `{"error":"Error calculation"}`, // Теперь правильное сообщение
+			expectedStatus:   http.StatusUnprocessableEntity,
+			expectedResponse: `{"error":"Error calculation"}`,
 		},
 	}
 
