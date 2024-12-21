@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -36,47 +37,86 @@ func New() *Application {
 }
 
 func CalcHandler(w http.ResponseWriter, r *http.Request) {
+	// Проверка метода запроса
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error":"Wrong Method"}`, http.StatusMethodNotAllowed)
 		return
 	}
 
+	// Чтение тела запроса
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		http.Error(w, `{"error":"Invalid Body"}`, http.StatusBadRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	// Декодирование тела запроса
 	var request struct {
 		Expression string `json:"expression"`
 	}
-
-	defer r.Body.Close()
-
-	err := json.NewDecoder(r.Body).Decode(&request)
+	err = json.Unmarshal(body, &request)
 	if err != nil || request.Expression == "" {
 		http.Error(w, `{"error":"Invalid Body"}`, http.StatusBadRequest)
 		return
 	}
 
+	// Вычисление
 	result, err := calculation.Calc(request.Expression)
 	if err != nil {
 		var errorMsg string
-		switch {
-		case err == calculation.ErrInvalidExpression:
+		statusCode := http.StatusUnprocessableEntity // Используем 422 для ошибок вычислений
+
+		switch err {
+		case calculation.ErrInvalidExpression:
 			errorMsg = "Error calculation"
-			http.Error(w, fmt.Sprintf(`{"error":"%s"}`, errorMsg), http.StatusUnprocessableEntity)
-			return
+		case calculation.ErrDivisionByZero:
+			errorMsg = "Division by zero"
+		case calculation.ErrMismatchedParentheses:
+			errorMsg = "Mismatched parentheses"
+		case calculation.ErrInvalidNumber:
+			errorMsg = "Invalid number"
+		case calculation.ErrUnexpectedToken:
+			errorMsg = "Unexpected token"
+		case calculation.ErrNotEnoughValues:
+			errorMsg = "Not enough values"
+		case calculation.ErrInvalidOperator:
+			errorMsg = "Invalid operator"
+		case calculation.ErrOperatorAtEnd:
+			errorMsg = "Operator at end"
+		case calculation.ErrMultipleDecimalPoints:
+			errorMsg = "Multiple decimal points"
+		case calculation.ErrEmptyInput:
+			errorMsg = "Empty input"
 		default:
-			http.Error(w, `{"error":"Unknown error occurred"}`, http.StatusInternalServerError)
-			return
+			errorMsg = "Error calculation" // Генерируем общий месседж для остальных ошибок
+			statusCode = http.StatusUnprocessableEntity
 		}
+
+		http.Error(w, fmt.Sprintf(`{"error":"%s"}`, errorMsg), statusCode)
+		return
 	}
 
+	// Формирование ответа
 	response := struct {
 		Result string `json:"result"`
 	}{
 		Result: fmt.Sprintf("%v", result),
 	}
 
+	responseJson, err := json.Marshal(response)
+	if err != nil {
+		log.Printf("Error while marshaling response: %v", err)
+		http.Error(w, `{"error":"Unknown error occurred"}`, http.StatusInternalServerError)
+		return
+	}
+
+	// Отправляем ответ
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
-	if err := json.NewEncoder(w).Encode(response); err != nil {
-		log.Printf("Error encoding response: %v", err)
+	_, err = w.Write(responseJson)
+	if err != nil {
+		log.Printf("Error writing response: %v", err)
 	}
 }
 
@@ -103,6 +143,14 @@ func (a *Application) Run() error {
 }
 
 func (a *Application) RunServer() error {
+	// Маршрут для вычислений
 	http.HandleFunc("/api/v1/calculate", CalcHandler)
+
+	// Обработка всех несуществующих путей
+	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, `{"error":"Not Found"}`, http.StatusNotFound)
+	})
+
+	// Запуск сервера
 	return http.ListenAndServe(":"+a.config.Addr, nil)
 }

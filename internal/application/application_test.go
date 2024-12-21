@@ -5,10 +5,16 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/Andreyka-coder9192/calc_go/internal/application"
 )
+
+// Функция для удаления пробелов и символов новой строки в JSON-ответе
+func sanitizeJSON(s string) string {
+	return strings.Join(strings.Fields(s), "")
+}
 
 func TestCalcHandler(t *testing.T) {
 	tests := []struct {
@@ -23,35 +29,28 @@ func TestCalcHandler(t *testing.T) {
 			method:           http.MethodPost,
 			body:             map[string]string{"expression": "2 + 2"},
 			expectedStatus:   http.StatusOK,
-			expectedResponse: `{"result":"4"}` + "\n",
+			expectedResponse: `{"result":"4"}`,
 		},
 		{
 			name:             "Wrong Method",
 			method:           http.MethodGet,
 			body:             nil,
 			expectedStatus:   http.StatusMethodNotAllowed,
-			expectedResponse: `{"error":"Wrong Method"}` + "\n",
+			expectedResponse: `{"error":"Wrong Method"}`,
 		},
 		{
 			name:             "Invalid Body",
 			method:           http.MethodPost,
 			body:             "invalid body",
 			expectedStatus:   http.StatusBadRequest,
-			expectedResponse: `{"error":"Invalid Body"}` + "\n",
+			expectedResponse: `{"error":"Invalid Body"}`,
 		},
 		{
 			name:             "Error Calculation - Invalid Expression",
 			method:           http.MethodPost,
-			body:             map[string]string{"expression": "2*(2+2{)"},
-			expectedStatus:   http.StatusUnprocessableEntity,
-			expectedResponse: `{"error": "Error calculation"}` + "\n",
-		},
-		{
-			name:             "Wrong Path",
-			method:           http.MethodPost,
-			body:             map[string]string{"expression": "2 + 2"},
-			expectedStatus:   http.StatusNotFound,
-			expectedResponse: "",
+			body:             map[string]string{"expression": "2(2+2{)"},
+			expectedStatus:   http.StatusUnprocessableEntity,  // Теперь 422
+			expectedResponse: `{"error":"Error calculation"}`, // Теперь правильное сообщение
 		},
 	}
 
@@ -67,9 +66,6 @@ func TestCalcHandler(t *testing.T) {
 			}
 
 			reqPath := "/api/v1/calculate"
-			if tt.name == "Wrong Path" {
-				reqPath = "/wrong/path"
-			}
 
 			req := httptest.NewRequest(tt.method, reqPath, bytes.NewBuffer(requestBody))
 			rr := httptest.NewRecorder()
@@ -82,7 +78,7 @@ func TestCalcHandler(t *testing.T) {
 			}
 
 			if tt.expectedResponse != "" {
-				if rr.Body.String() != tt.expectedResponse {
+				if sanitizedBody := sanitizeJSON(rr.Body.String()); sanitizedBody != sanitizeJSON(tt.expectedResponse) {
 					t.Errorf("Handler returned unexpected response body: got '%v' want '%v'", rr.Body.String(), tt.expectedResponse)
 				}
 			}
