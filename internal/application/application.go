@@ -37,7 +37,7 @@ func New() *Application {
 
 func CalcHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
-		http.Error(w, `{"error": "Wrong Method"}`, http.StatusMethodNotAllowed)
+		http.Error(w, `{"error":"Wrong Method"}`, http.StatusMethodNotAllowed)
 		return
 	}
 
@@ -49,7 +49,7 @@ func CalcHandler(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil || request.Expression == "" {
-		http.Error(w, `{"error": "Invalid Body"}`, http.StatusBadRequest)
+		http.Error(w, `{"error":"Invalid Body"}`, http.StatusBadRequest)
 		return
 	}
 
@@ -59,18 +59,18 @@ func CalcHandler(w http.ResponseWriter, r *http.Request) {
 		switch {
 		case err == calculation.ErrInvalidExpression:
 			errorMsg = "Error calculation"
-			http.Error(w, fmt.Sprintf(`{"error": "%s"}`, errorMsg), http.StatusUnprocessableEntity)
+			http.Error(w, fmt.Sprintf(`{"error":"%s"}`, errorMsg), http.StatusUnprocessableEntity)
 			return
 		default:
-			http.Error(w, `{"error": "Unknown error occurred"}`, http.StatusInternalServerError)
+			http.Error(w, `{"error":"Unknown error occurred"}`, http.StatusInternalServerError)
 			return
 		}
 	}
 
 	response := struct {
-		Result float64 `json:"result"`
+		Result string `json:"result"`
 	}{
-		Result: result,
+		Result: fmt.Sprintf("%v", result),
 	}
 
 	w.Header().Set("Content-Type", "application/json")

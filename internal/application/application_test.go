@@ -1,4 +1,4 @@
-package application
+package application_test
 
 import (
 	"bytes"
@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+
+	"github.com/Andreyka-coder9192/calc_go/internal/application"
 )
 
 func TestCalcHandler(t *testing.T) {
@@ -40,7 +42,7 @@ func TestCalcHandler(t *testing.T) {
 		{
 			name:             "Error Calculation - Invalid Expression",
 			method:           http.MethodPost,
-			body:             map[string]string{"expression": "2*(2+2)"},
+			body:             map[string]string{"expression": "2*(2+2{)"},
 			expectedStatus:   http.StatusUnprocessableEntity,
 			expectedResponse: `{"error": "Error calculation"}`,
 		},
@@ -71,7 +73,7 @@ func TestCalcHandler(t *testing.T) {
 
 			req := httptest.NewRequest(tt.method, reqPath, bytes.NewBuffer(requestBody))
 			rr := httptest.NewRecorder()
-			handler := http.HandlerFunc(CalcHandler)
+			handler := http.HandlerFunc(application.CalcHandler)
 
 			handler.ServeHTTP(rr, req)
 
