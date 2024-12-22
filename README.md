@@ -19,16 +19,26 @@ cd calc_go
 
 2. Убедитесь, что Go установлен и находится в `$PATH` (проверить версию можно командой `go version`).
 
-3. Запустите API-сервер командой:
+3. Запустите API-сервер:
+
+### В Linux и macOS
 
 ```bash
-go run .\cmd\main.go
+go run ./cmd/main.go
 ```
 
-Сервер запустится на порту `8080`. Если необходимо изменить порт, установите флаг `--port`:
+Сервер запустится на порту `8080` по умолчанию. Если необходимо изменить порт, установите переменную окружения `PORT` перед запуском:
 
 ```bash
-go run .\cmd\main.go --port 9090
+export PORT=9090
+go run ./cmd/main.go
+```
+
+### В Windows (PowerShell)
+
+```powershell
+$env:PORT=9090
+go run ./cmd/main.go
 ```
 
 ---
@@ -154,4 +164,3 @@ curl --location 'http://localhost:8080/api/v1/calculate' \
 {
   "error": "Wrong Method"
 }
-```
