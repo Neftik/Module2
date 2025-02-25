@@ -11,7 +11,6 @@ import (
 	"time"
 )
 
-// Config хранит настройки оркестратора, включая порт и время операций.
 type Config struct {
 	Addr                string
 	TimeAddition        int
@@ -20,7 +19,6 @@ type Config struct {
 	TimeDivisions       int
 }
 
-// ConfigFromEnv читает переменные окружения.
 func ConfigFromEnv() *Config {
 	port := os.Getenv("PORT")
 	if port == "" {
@@ -51,18 +49,16 @@ func ConfigFromEnv() *Config {
 	}
 }
 
-// Orchestrator управляет выражениями и задачами.
 type Orchestrator struct {
 	Config      *Config
-	exprStore   map[string]*Expression // все выражения
-	taskStore   map[string]*Task       // задачи, назначенные агентам
-	taskQueue   []*Task                // очередь задач
+	exprStore   map[string]*Expression
+	taskStore   map[string]*Task
+	taskQueue   []*Task
 	mu          sync.Mutex
 	exprCounter int64
 	taskCounter int64
 }
 
-// NewOrchestrator создаёт новый экземпляр оркестратора.
 func NewOrchestrator() *Orchestrator {
 	return &Orchestrator{
 		Config:    ConfigFromEnv(),
@@ -72,28 +68,24 @@ func NewOrchestrator() *Orchestrator {
 	}
 }
 
-// Expression представляет выражение пользователя.
 type Expression struct {
 	ID     string   `json:"id"`
 	Expr   string   `json:"expression"`
-	Status string   `json:"status"`           // "pending", "in_progress", "completed"
-	Result *float64 `json:"result,omitempty"` // результат, если вычислено
+	Status string   `json:"status"`
+	Result *float64 `json:"result,omitempty"`
 	AST    *ASTNode `json:"-"`
 }
 
-// Task представляет единичную задачу – выполнение одной бинарной операции.
 type Task struct {
-	ID            string  `json:"id"`
-	ExprID        string  `json:"-"`
-	Arg1          float64 `json:"arg1"`
-	Arg2          float64 `json:"arg2"`
-	Operation     string  `json:"operation"`
-	OperationTime int     `json:"operation_time"`
-	// Node – указатель на узел AST, который надо обновить при получении результата.
-	Node *ASTNode `json:"-"`
+	ID            string   `json:"id"`
+	ExprID        string   `json:"-"`
+	Arg1          float64  `json:"arg1"`
+	Arg2          float64  `json:"arg2"`
+	Operation     string   `json:"operation"`
+	OperationTime int      `json:"operation_time"`
+	Node          *ASTNode `json:"-"`
 }
 
-// calculateHandler обрабатывает запрос на добавление нового выражения.
 func (o *Orchestrator) calculateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error":"Wrong Method"}`, http.StatusMethodNotAllowed)
@@ -107,7 +99,6 @@ func (o *Orchestrator) calculateHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, `{"error":"Invalid Body"}`, http.StatusUnprocessableEntity)
 		return
 	}
-	// Парсим выражение в AST.
 	ast, err := ParseAST(req.Expression)
 	if err != nil {
 		http.Error(w, fmt.Sprintf(`{"error":"%s"}`, err.Error()), http.StatusUnprocessableEntity)
@@ -123,7 +114,6 @@ func (o *Orchestrator) calculateHandler(w http.ResponseWriter, r *http.Request) 
 		AST:    ast,
 	}
 	o.exprStore[exprID] = expr
-	// Распланируем задачи для этого выражения.
 	o.scheduleTasks(expr)
 	o.mu.Unlock()
 
@@ -132,7 +122,6 @@ func (o *Orchestrator) calculateHandler(w http.ResponseWriter, r *http.Request) 
 	json.NewEncoder(w).Encode(map[string]string{"id": exprID})
 }
 
-// expressionsHandler возвращает список всех выражений.
 func (o *Orchestrator) expressionsHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, `{"error":"Wrong Method"}`, http.StatusMethodNotAllowed)
@@ -152,7 +141,6 @@ func (o *Orchestrator) expressionsHandler(w http.ResponseWriter, r *http.Request
 	json.NewEncoder(w).Encode(map[string]interface{}{"expressions": exprs})
 }
 
-// expressionByIDHandler возвращает выражение по его идентификатору.
 func (o *Orchestrator) expressionByIDHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, `{"error":"Wrong Method"}`, http.StatusMethodNotAllowed)
@@ -174,7 +162,6 @@ func (o *Orchestrator) expressionByIDHandler(w http.ResponseWriter, r *http.Requ
 	json.NewEncoder(w).Encode(map[string]interface{}{"expression": expr})
 }
 
-// getTaskHandler возвращает задачу для агента.
 func (o *Orchestrator) getTaskHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet {
 		http.Error(w, `{"error":"Wrong Method"}`, http.StatusMethodNotAllowed)
@@ -186,10 +173,8 @@ func (o *Orchestrator) getTaskHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"No task available"}`, http.StatusNotFound)
 		return
 	}
-	// Извлекаем задачу из очереди.
 	task := o.taskQueue[0]
 	o.taskQueue = o.taskQueue[1:]
-	// Отмечаем, что выражение находится в стадии вычисления.
 	if expr, exists := o.exprStore[task.ExprID]; exists {
 		expr.Status = "in_progress"
 	}
@@ -197,7 +182,6 @@ func (o *Orchestrator) getTaskHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(map[string]interface{}{"task": task})
 }
 
-// postTaskHandler принимает результат выполнения задачи от агента.
 func (o *Orchestrator) postTaskHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error":"Wrong Method"}`, http.StatusMethodNotAllowed)
@@ -219,12 +203,9 @@ func (o *Orchestrator) postTaskHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"Task not found"}`, http.StatusNotFound)
 		return
 	}
-	// Обновляем узел AST: переводим операторный узел в лист с вычисленным значением.
 	task.Node.IsLeaf = true
 	task.Node.Value = req.Result
-	// Удаляем задачу из хранилища.
 	delete(o.taskStore, req.ID)
-	// Перепланируем задачи для выражения (возможно, теперь можно вычислить родительский узел).
 	if expr, exists := o.exprStore[task.ExprID]; exists {
 		o.scheduleTasks(expr)
 		if expr.AST.IsLeaf {
@@ -237,17 +218,14 @@ func (o *Orchestrator) postTaskHandler(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`{"status":"result accepted"}`))
 }
 
-// scheduleTasks проходит по AST выражения и планирует задачи для узлов, у которых оба потомка – листья.
 func (o *Orchestrator) scheduleTasks(expr *Expression) {
 	var traverse func(node *ASTNode)
 	traverse = func(node *ASTNode) {
 		if node == nil || node.IsLeaf {
 			return
 		}
-		// Рекурсивно обходим потомков.
 		traverse(node.Left)
 		traverse(node.Right)
-		// Если оба потомка – листья и задача для этого узла ещё не запланирована.
 		if node.Left != nil && node.Right != nil && node.Left.IsLeaf && node.Right.IsLeaf {
 			if !node.TaskScheduled {
 				o.taskCounter++
@@ -283,7 +261,6 @@ func (o *Orchestrator) scheduleTasks(expr *Expression) {
 	traverse(expr.AST)
 }
 
-// RunServer запускает HTTP-сервер с заданными маршрутами.
 func (o *Orchestrator) RunServer() error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/calculate", o.calculateHandler)
@@ -298,16 +275,13 @@ func (o *Orchestrator) RunServer() error {
 			http.Error(w, `{"error":"Wrong Method"}`, http.StatusMethodNotAllowed)
 		}
 	})
-	// Обработчик по умолчанию.
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"error":"Not Found"}`, http.StatusNotFound)
 	})
-	// Ждём, пока не появятся новые задачи – можно добавить фоновый процесс, если потребуется.
 	go func() {
 		for {
 			time.Sleep(2 * time.Second)
 			o.mu.Lock()
-			// Логирование состояния очереди задач
 			if len(o.taskQueue) > 0 {
 				log.Printf("Pending tasks in queue: %d", len(o.taskQueue))
 			}
