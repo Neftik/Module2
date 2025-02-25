@@ -7,16 +7,14 @@ import (
 	"unicode"
 )
 
-// ASTNode представляет узел дерева разбора.
 type ASTNode struct {
 	IsLeaf        bool
 	Value         float64
 	Operator      string
 	Left, Right   *ASTNode
-	TaskScheduled bool // Флаг, что для этого узла уже запланирована задача
+	TaskScheduled bool
 }
 
-// ParseAST преобразует строку с арифметическим выражением в AST.
 func ParseAST(expression string) (*ASTNode, error) {
 	expr := strings.ReplaceAll(expression, " ", "")
 	if expr == "" {
@@ -51,7 +49,6 @@ func (p *parser) get() rune {
 	return ch
 }
 
-// parseExpression обрабатывает операции + и -.
 func (p *parser) parseExpression() (*ASTNode, error) {
 	node, err := p.parseTerm()
 	if err != nil {
@@ -78,7 +75,6 @@ func (p *parser) parseExpression() (*ASTNode, error) {
 	return node, nil
 }
 
-// parseTerm обрабатывает операции * и /.
 func (p *parser) parseTerm() (*ASTNode, error) {
 	node, err := p.parseFactor()
 	if err != nil {
@@ -105,11 +101,10 @@ func (p *parser) parseTerm() (*ASTNode, error) {
 	return node, nil
 }
 
-// parseFactor обрабатывает числа и выражения в скобках.
 func (p *parser) parseFactor() (*ASTNode, error) {
 	ch := p.peek()
 	if ch == '(' {
-		p.get() // потребляем '('
+		p.get()
 		node, err := p.parseExpression()
 		if err != nil {
 			return nil, err
@@ -117,10 +112,9 @@ func (p *parser) parseFactor() (*ASTNode, error) {
 		if p.peek() != ')' {
 			return nil, fmt.Errorf("missing closing parenthesis")
 		}
-		p.get() // потребляем ')'
+		p.get()
 		return node, nil
 	}
-	// Обработка числа (возможно, с ведущим + или -)
 	start := p.pos
 	if ch == '+' || ch == '-' {
 		p.get()
