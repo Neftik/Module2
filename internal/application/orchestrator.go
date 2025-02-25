@@ -3,6 +3,7 @@ package application
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"strconv"
@@ -306,7 +307,10 @@ func (o *Orchestrator) RunServer() error {
 		for {
 			time.Sleep(2 * time.Second)
 			o.mu.Lock()
-			// Здесь можно логировать состояние очереди или выполнять другие задачи.
+			// Логирование состояния очереди задач
+			if len(o.taskQueue) > 0 {
+				log.Printf("Pending tasks in queue: %d", len(o.taskQueue))
+			}
 			o.mu.Unlock()
 		}
 	}()

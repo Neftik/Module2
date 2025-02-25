@@ -3,7 +3,7 @@ package application
 import (
 	"bytes"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
@@ -38,6 +38,7 @@ func NewAgent() *Agent {
 // Run запускает заданное число рабочих горутин.
 func (a *Agent) Run() {
 	for i := 0; i < a.ComputingPower; i++ {
+		log.Printf("Starting worker %d", i)
 		go a.worker(i)
 	}
 	// Блокировка основного потока, чтобы демон не завершился.
@@ -96,7 +97,7 @@ func (a *Agent) worker(id int) {
 			continue
 		}
 		if respPost.StatusCode != http.StatusOK {
-			body, _ := ioutil.ReadAll(respPost.Body)
+			body, _ := io.ReadAll(respPost.Body)
 			log.Printf("Worker %d: error response posting result for task %s: %s", id, task.ID, string(body))
 		} else {
 			log.Printf("Worker %d: successfully completed task %s with result %f", id, task.ID, result)
