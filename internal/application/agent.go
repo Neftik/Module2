@@ -13,13 +13,11 @@ import (
 	"github.com/Andreyka-coder9192/calc_go/internal/pkg/calculation"
 )
 
-// Agent – демон, который получает задачи от оркестратора и выполняет их.
 type Agent struct {
 	ComputingPower  int
 	OrchestratorURL string
 }
 
-// NewAgent создаёт нового агента, читая переменные окружения.
 func NewAgent() *Agent {
 	cp, err := strconv.Atoi(os.Getenv("COMPUTING_POWER"))
 	if err != nil || cp < 1 {
@@ -35,17 +33,14 @@ func NewAgent() *Agent {
 	}
 }
 
-// Run запускает заданное число рабочих горутин.
 func (a *Agent) Run() {
 	for i := 0; i < a.ComputingPower; i++ {
 		log.Printf("Starting worker %d", i)
 		go a.worker(i)
 	}
-	// Блокировка основного потока, чтобы демон не завершился.
 	select {}
 }
 
-// worker – функция одного рабочего, постоянно запрашивающего задачи.
 func (a *Agent) worker(id int) {
 	for {
 		resp, err := http.Get(a.OrchestratorURL + "/internal/task")
@@ -77,15 +72,12 @@ func (a *Agent) worker(id int) {
 		}
 		task := taskResp.Task
 		log.Printf("Worker %d: received task %s: %f %s %f, simulating %d ms", id, task.ID, task.Arg1, task.Operation, task.Arg2, task.OperationTime)
-		// Имитируем задержку выполнения операции.
 		time.Sleep(time.Duration(task.OperationTime) * time.Millisecond)
-		// Вычисляем результат с помощью функции Compute.
 		result, err := calculation.Compute(task.Operation, task.Arg1, task.Arg2)
 		if err != nil {
 			log.Printf("Worker %d: error computing task %s: %v", id, task.ID, err)
 			continue
 		}
-		// Отправляем результат обратно оркестратору.
 		resultPayload := map[string]interface{}{
 			"id":     task.ID,
 			"result": result,

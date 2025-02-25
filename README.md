@@ -229,6 +229,5 @@ curl --location 'http://localhost:8080/api/v1/calculate' \
 ## Тестирование
 
 ```bash
-# Запуск тестов вычислений
-go test ./pkg/calculation/...
+go test ./...
 ```
