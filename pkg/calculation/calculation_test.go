@@ -1,7 +1,9 @@
-package calculation
+package calculation_test
 
 import (
 	"testing"
+
+	"github.com/Andreyka-coder9192/calc_go/pkg/calculation"
 )
 
 func TestCalc(t *testing.T) {
@@ -62,7 +64,7 @@ func TestCalc(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase.expression, func(t *testing.T) {
-			result, err := Calc(testCase.expression)
+			result, err := calculation.Calc(testCase.expression)
 			if err != nil {
 				t.Errorf("Calc(%s) error: %v", testCase.expression, err)
 			} else if result != testCase.expected {
@@ -103,7 +105,7 @@ func TestCalcErrors(t *testing.T) {
 
 	for _, testCase := range testCases {
 		t.Run(testCase, func(t *testing.T) {
-			_, err := Calc(testCase)
+			_, err := calculation.Calc(testCase)
 			if err == nil {
 				t.Errorf("Calc(%s) error is nil, want error", testCase)
 			}
