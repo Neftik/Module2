@@ -45,21 +45,21 @@ func TestParseASTValid(t *testing.T) {
 		{"3", 3},
 		{"(1+2)*3", 9},
 		{"(4/2)-1", 1},
-		{"2+3*4", 14}, // 2+(3*4)=14, учитывая приоритет операций
+		{"2+3*4", 14},
 	}
 	for _, tc := range tests {
 		ast, err := application.ParseAST(tc.expr)
 		if err != nil {
-			t.Errorf("Неожиданная ошибка для выражения %s: %v", tc.expr, err)
+			t.Errorf("Unexpected error for expression %s: %v", tc.expr, err)
 			continue
 		}
 		result, err := evalAST(ast)
 		if err != nil {
-			t.Errorf("Ошибка вычисления AST для %s: %v", tc.expr, err)
+			t.Errorf("AST evaluation error for %s: %v", tc.expr, err)
 			continue
 		}
 		if result != tc.expected {
-			t.Errorf("Для выражения %s ожидается %f, получено %f", tc.expr, tc.expected, result)
+			t.Errorf("Expected %f for expression %s, but got %f", tc.expected, tc.expr, result)
 		}
 	}
 }
@@ -75,7 +75,7 @@ func TestParseASTInvalid(t *testing.T) {
 	for _, expr := range invalidExprs {
 		_, err := application.ParseAST(expr)
 		if err == nil {
-			t.Errorf("Ожидалась ошибка для некорректного выражения %q, но ошибки не произошло", expr)
+			t.Errorf("Expected an error for invalid expression %q, but no error occurred", expr)
 		}
 	}
 }
