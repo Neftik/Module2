@@ -2,6 +2,24 @@
 
 Система для параллельного вычисления сложных арифметических выражений с использованием оркестратора и агентов-вычислителей.
 
+## Установка и настройка
+
+1. **Клонируйте репозиторий**:
+    ```bash
+    git clone https://github.com/Andreyka-coder9192/calc_go.git
+    cd calc_go
+    ```
+
+2. **Убедитесь, что установлен Go 1.20+**:
+    ```bash
+    go version
+    ```
+    Если Go не установлен:
+    - **Linux/macOS**: [Официальная инструкция](https://go.dev/doc/install)
+    - **Windows**: [Скачайте установщик](https://go.dev/dl/)
+
+---
+
 ## Архитектура
 
 ```mermaid
@@ -229,5 +247,5 @@ curl --location 'http://localhost:8080/api/v1/calculate' \
 ## Тестирование
 
 ```bash
-go test ./...
+go test .\tests\
 ```

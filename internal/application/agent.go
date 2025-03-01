@@ -10,7 +10,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Andreyka-coder9192/calc_go/internal/pkg/calculation"
+	"github.com/Andreyka-coder9192/calc_go/pkg/calculation"
 )
 
 type Agent struct {

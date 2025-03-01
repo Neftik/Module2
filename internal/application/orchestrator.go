@@ -86,7 +86,7 @@ type Task struct {
 	Node          *ASTNode `json:"-"`
 }
 
-func (o *Orchestrator) calculateHandler(w http.ResponseWriter, r *http.Request) {
+func (o *Orchestrator) CalculateHandler(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, `{"error":"Wrong Method"}`, http.StatusMethodNotAllowed)
 		return
@@ -263,7 +263,7 @@ func (o *Orchestrator) scheduleTasks(expr *Expression) {
 
 func (o *Orchestrator) RunServer() error {
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/v1/calculate", o.calculateHandler)
+	mux.HandleFunc("/api/v1/calculate", o.CalculateHandler)
 	mux.HandleFunc("/api/v1/expressions", o.expressionsHandler)
 	mux.HandleFunc("/api/v1/expressions/", o.expressionByIDHandler)
 	mux.HandleFunc("/internal/task", func(w http.ResponseWriter, r *http.Request) {

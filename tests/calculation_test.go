@@ -1,6 +1,10 @@
-package calculation
+package tests
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/Andreyka-coder9192/calc_go/pkg/calculation"
+)
 
 func TestCompute(t *testing.T) {
 	tests := []struct {
@@ -17,12 +21,12 @@ func TestCompute(t *testing.T) {
 		{"^", 2, 3, 0, true},
 	}
 	for _, tc := range tests {
-		result, err := Compute(tc.op, tc.a, tc.b)
+		result, err := calculation.Compute(tc.op, tc.a, tc.b)
 		if tc.shouldErr && err == nil {
-			t.Errorf("Expected error for operation %s", tc.op)
+			t.Errorf("Ожидалась ошибка для операции %s", tc.op)
 		}
 		if !tc.shouldErr && result != tc.expected {
-			t.Errorf("Compute(%s, %f, %f) = %f; expected %f", tc.op, tc.a, tc.b, result, tc.expected)
+			t.Errorf("Compute(%s, %f, %f) = %f; ожидалось %f", tc.op, tc.a, tc.b, result, tc.expected)
 		}
 	}
 }
