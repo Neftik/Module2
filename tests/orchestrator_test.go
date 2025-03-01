@@ -13,9 +13,7 @@ import (
 func TestCalculateHandler(t *testing.T) {
 	orch := application.NewOrchestrator()
 
-	// Оборачиваем обработчик в http.HandlerFunc для тестирования
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// calculateHandler является неэкспортируемым, поэтому вызываем его через оркестратор
 		orch.CalculateHandler(w, r)
 	})
 
