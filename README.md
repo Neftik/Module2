@@ -53,29 +53,126 @@ graph TD
 - Приоритет операций и скобки
 - Параллельное выполнение операций
 
-## Запуск системы
+# Запуск системы
 
-1. **Запуск оркестратора**
+## 1. Запуск оркестратора
 
-   ```bash
-   # Установка времени операций (в миллисекундах)
-   export TIME_ADDITION_MS=200
-   export TIME_SUBTRACTION_MS=200
-   export TIME_MULTIPLICATIONS_MS=300
-   export TIME_DIVISIONS_MS=400
+### Linux / macOS (bash)
+~~~bash
+# Установка времени операций (в миллисекундах)
+export TIME_ADDITION_MS=200
+export TIME_SUBTRACTION_MS=200
+export TIME_MULTIPLICATIONS_MS=300
+export TIME_DIVISIONS_MS=400
 
-   go run ./cmd/orchestrator/main.go
-   ```
+# Запуск оркестратора
+go run ./cmd/orchestrator/main.go
+~~~
 
-2. **Запуск агента**
+### Windows (cmd.exe)
+~~~bat
+:: Установка времени операций (в миллисекундах)
+set TIME_ADDITION_MS=200
+set TIME_SUBTRACTION_MS=200
+set TIME_MULTIPLICATIONS_MS=300
+set TIME_DIVISIONS_MS=400
 
-   ```bash
-   # Указание вычислительной мощности (количество горутин)
-   export COMPUTING_POWER=4
-   export ORCHESTRATOR_URL=http://localhost:8080
+:: Запуск оркестратора
+go run .\cmd\orchestrator\main.go
+~~~
 
-   go run ./cmd/agent/main.go
-   ```
+### Windows (PowerShell)
+~~~powershell
+# Установка времени операций (в миллисекундах)
+$env:TIME_ADDITION_MS = "200"
+$env:TIME_SUBTRACTION_MS = "200"
+$env:TIME_MULTIPLICATIONS_MS = "300"
+$env:TIME_DIVISIONS_MS = "400"
+
+# Запуск оркестратора
+go run .\cmd\orchestrator\main.go
+~~~
+
+## 2. Запуск агента
+
+### Linux / macOS (bash)
+~~~bash
+# Указание вычислительной мощности (количество горутин) и URL оркестратора
+export COMPUTING_POWER=4
+export ORCHESTRATOR_URL=http://localhost:8080
+
+# Запуск агента
+go run ./cmd/agent/main.go
+~~~
+
+### Windows (cmd.exe)
+~~~bat
+:: Указание вычислительной мощности (количество горутин) и URL оркестратора
+set COMPUTING_POWER=4
+set ORCHESTRATOR_URL=http://localhost:8080
+
+:: Запуск агента
+go run .\cmd\agent\main.go
+~~~
+
+### Windows (PowerShell)
+~~~powershell
+# Указание вычислительной мощности (количество горутин) и URL оркестратора
+$env:COMPUTING_POWER = "4"
+$env:ORCHESTRATOR_URL = "http://localhost:8080"
+
+# Запуск агента
+go run .\cmd\agent\main.go
+~~~
+
+## Дополнительно: Запуск в Docker
+
+### Dockerfile для оркестратора (Dockerfile.orchestrator)
+~~~dockerfile
+FROM golang:1.20-alpine
+WORKDIR /app
+COPY . .
+ENV TIME_ADDITION_MS=200 \
+    TIME_SUBTRACTION_MS=200 \
+    TIME_MULTIPLICATIONS_MS=300 \
+    TIME_DIVISIONS_MS=400
+RUN go build -o orchestrator ./cmd/orchestrator
+CMD ["./orchestrator"]
+~~~
+
+### Dockerfile для агента (Dockerfile.agent)
+~~~dockerfile
+FROM golang:1.20-alpine
+WORKDIR /app
+COPY . .
+ENV COMPUTING_POWER=4 \
+    ORCHESTRATOR_URL=http://orchestrator:8080
+RUN go build -o agent ./cmd/agent
+CMD ["./agent"]
+~~~
+
+### docker-compose.yml
+~~~yaml
+version: "3.8"
+services:
+  orchestrator:
+    build:
+      context: .
+      dockerfile: Dockerfile.orchestrator
+    ports:
+      - "8080:8080"
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    depends_on:
+      - orchestrator
+~~~
+
+Запуск через Docker Compose:
+~~~bash
+docker-compose up --build
+~~~
 
 ## API Endpoints
 
