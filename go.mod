@@ -1,3 +1,4 @@
-module github.com/Andreyka-coder9192/calc_go
+module github.com/Neftik/Module2
 
-go 1.23.0
+
+go 1.23.1
